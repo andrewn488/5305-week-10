@@ -55,6 +55,505 @@ knitr::opts_chunk$set(echo = TRUE)
     + Co-integration
     
 
+## Chapter 10 Lecture videos
+
++ Forecasting the long term
+
++ Trends
+
+    + Deterministic
+        + Trend that is linear function of time
+        + Trend stationary (residucals are stationary)
+            + Linear / Quadratic / Exponential / Logistic
+        + Compare R2 / AIC / SIC
+            + R2 <- higher the better
+            + AIC / SIC <- smaller the better
+        + Goal: get residuals to appear as white noise
+    + Stochastic
+        + aka "Random Walk" 
+            1. Random Walk without Drift
+                + Similar to AR(1) model
+                + The shocks (spikes) never go away (get down to 0)
+            2. Random Walk with Drift
+              + There is a trend but unlike Deterministic, mean will come back after time infinity
+
++ Dickey-Fuller Test
+
+    + Similar to t-test
+    1. Random walk without Drift
+        + run regression without intercept
+    2. Random walk with Drift
+        + run regression with intercept
+    3. Random walk with Drift and Trend
+        + run regression with intercept and linear time trend
+        
++ Optimal Forecast
+
+    + Can only happen when you figure out which case you're working with
+    + Increase forecast horizon
+    
++ Test unit root
+
+    + Get first difference
+    + Regressor is the lag(1) period of the original TS
+    + t-statistic vs. critical value
+        + if t-statistic < abs(critical_value) <- fail to reject Ho hypothesis
+
++ Residuals
+
+    + We want residuals to be white noise (no spikes in ACF or PACF)
+        + Augmented Dickey-Fuller Test
+        + Get residuals to be more like white noise
+
++ Summary
+
+    + Non-stationary TS, use Dickey-Fuller test to find if it has a Unit Root
+        + Determine trend as Deterministic or Stochastic trend
+        + Make estimations and forecasts accordingly
+    
+## Chapter 10 R Instructions
+
+### Part 1 Simulation
+
+1. Deterministic time trend
+
+```{r}
+# P258 Generate time trend
+t <- c(1:50)  # generate t=1,2,...50
+y <- 1 + 0.5 * t + rnorm(50)  # y=1+.5*trend + normal white noise
+
+# plot y
+ts.plot(y)
+
+# also plot the trend
+lines(.5*t)  
+```
+
+**Comments**
+
++ Distribution moves up and down, but always returns back to the trendline
+
+2. Generate random walk without drift
+
+```{r}
+# P271 Generate randm walk
+y <- numeric(500)  # generate a vector of 500 zeros
+for (i in 2:500){  # start a for loop
+  y[i] = y[i-1] + rnorm(1)  # generate random walk without drift
+}  # end the loop
+
+# plot y
+ts.plot(y)
+
+# also plot horizontal line at zero
+lines(numeric(500)) 
+
+# another way to generate random walk without drift
+ts.plot(cumsum(rnorm(500))) 
+```
+
+**Comments**
+
++ Trend of the mean of the TS
++ See the TS random walk - does not always return back to trendline
+
+```{r}
+# P277 model for case I, showing in fig10.8a (You should run this several times to see the variation)
+# generate a vector of 500 zeros
+y <- numeric(500) 
+for (i in 2:500){ 
+  y[i] = 0.9988 * y[i-1] + rnorm(1)  # generate random walk without drift
+}
+# plot y
+ts.plot(y) 
+
+# also plot trend .5*t
+lines(0*c(1:500))
+```
+
+**Comments**
++ coefficient close to 1
++ still has features of random walk
++ does not hug the trendline
++ it will return to trendline, but we don't know when
+
+3. Generate random walk with drift
+
+```{r}
+# generate a vector of 500 zeros
+y <- numeric(500) 
+for (i in 2:500){ 
+  y[i] = 0.5 + y[i-1] + rnorm(1)  # generate random walk with drift
+}
+
+# plot y
+ts.plot(y) 
+
+# also plot trend .5*t
+lines(.5*c(1:500)) 
+```
+
+**Comments**
+
++ Drift is 0.5
++ Coefficient is 1
++ Drift and coefficient make the TS a random walk
++ Don't know when it will come back to cross the trend.
+
+```{r}
+# P277 model for case II 
+# generate a vector of 500 zeros
+y <- numeric(500) 
+for (i in 2:500){ 
+  y[i] = -0.325 + 0.9905 * y[i-1] + rnorm(1)  # generate random walk with drift
+}
+
+# plot y
+ts.plot(y)
+
+# also plot trend .5*t
+lines( 0 * c(1:500))
+```
+
+**Comments**
++ TS is < 0 because we have a negative drift
+
+4. Generate random walk with drift and time trend
+
+```{r}
+# P277 model for case III shown in fig10.8b
+# generate a vector of 500 zeros
+y <- numeric(500) 
+for (i in 2:500){ 
+  y[i] = 0.9167 + 0.0082i + 0.9830 * y[i-1] + rnorm(1)  # generate random walk with drift and a time trend
+}
+
+# plot y
+ts.plot(y)
+
+# also plot trend .5*t
+lines(0 * c(1:500))  
+```
+
+### Part 2 Deterministic trend
+
++ How to select a model to fit the data with deterministic trend
++ Move in 2 steps
+
+    1. Choose the order of the polynomial trend
+    2. After fitting the data, remove the polynomial trend
+        + Stationary / AR model to fit the residual
+        
+```{r}
+# P266
+library(readxl)
+data <- read_excel("../02_raw_data/Figure10_5_MortgageDebt.xls")
+debt <- ts(data$`MORTGAGE DEBT`, frequency=4, start = c(1992, 1))  # declare debt as quarterly time series
+plot(debt)
+```
+
+**Comments**
++ Plot resembles deterministic trend. Does not look linear
++ This tells us we need to use a polynomial function of time to approximate the trend
+
+```{r}
+trend1 <- ts(c(1:49), frequency = 4, start = c(1992, 1))  # trend1=1,2,3...60, declared to be time-series
+model <- lm(debt ~ poly(trend1, 4, raw=TRUE))  # y=b0+b1*t+b2*t^2+b3*t^31+b4*t^4+WN
+
+# estimation output
+summary(model) 
+```
+
+**Comments**
++ Coefficients of all 4 regressors are significant
++ R2 is very high
++ Need to calculate AIC and BIC
+
+```{r}
+# smaller the better
+AIC(model)  # AIC
+## [1] 434.5619
+BIC(model)  # BIC
+## [1] 445.9129
+```
+
+**Comments**
+
++ the smaller the better
+
+2. Plot the original TS, calculate the fit of the residual, and plot the fitted value
+
+```{r}
+#plot debt w/o y-axis title, dashed
+plot.ts(debt, ylab="", lty=2) 
+
+# declare fit as quarterly time series
+fit = ts(fitted(model), frequency = 4, start=c(1992,1)) 
+
+# declare res as quarterly time series
+res = ts(resid(model), frequency = 4, start=c(1992,1)) 
+
+# also plot fit in red color
+lines(fit, col="red", lty=2) 
+
+# following series will be graphed on the existing plot
+par(new=TRUE) 
+
+# plot residuals w/o y-axis title, in blue color
+plot.ts(res, axes=FALSE, ylab="", col="blue") 
+
+# add the right y-axis for residuals
+axis(side=4, at = pretty(range(res))) 
+
+# legend, debt and fit will be dashed 
+legend("topleft", legend=c("Actual", "Fit", "Res"), lty=c(2,2,1), col=c("black", "red", "blue")) 
+```
+
+**Comments**
++ Fitted value in red dashed line
+
+    + This matches the original data well
+    
++ Residual plot appears stationary
+
+    + Not white noise because the TS does not fade as time moves on - it always returns back to trendline
+    
++ Run ACF and PACF to choose model order
+
+```{r}
+# ACF of residuals of the 4th order polynomial trend model
+acf(res)
+
+# PACF of residuals of the 4th order polynomial trend model
+pacf(res) 
+```
+
+**Comments**
++ ACF - spikes gradually move into the significance threshold
++ PACF - 2 spikes, so appears to be AR(2) to be good fit for the residuals
+
+```{r}
+# P268
+# install.packages("dynlm") #install dynamic linear modelling package
+
+# dynlm is required for using lag operators
+library(dynlm) 
+
+# AR(2) + polynomial(4) trend
+model <- dynlm(debt ~ trend1 + I(trend1^2) + I(trend1^3) + I(trend1^4) + lag(debt,-1) + lag(debt,-2)) 
+
+# estimation output
+summary(model) 
+
+AIC(model)  # AIC
+## [1] 394.7132
+BIC(model)  # BIC
+## [1] 409.5144
+```
+
+**Comments**
++ Still maintain time trends, but add 2 more regressors
++ We see the coefficients on the 2 lags are significant (trend1) and the rest is not so significant anymore
++ Compare AIC and BIC with original model, this one is smaller, so it's better
+
+```{r}
+# P269
+# plot debt w/o y-axis title, dashed
+plot.ts(debt, ylab="", lty=2) 
+
+# declare fit as quarterly time series, note that fitted values start drom 1992q3 because it is an AR(2) model
+fit = ts(fitted(model), frequency = 4, start=c(1992,3)) 
+
+# declare res as quarterly time series
+res = ts(resid(model), frequency = 4, start=c(1992,1)) 
+
+# also plot fit in red color
+lines(fit, col="red", lty=2) 
+
+# following series will be graphed on the existing plot
+par(new=TRUE) 
+
+# plot residuals w/o y-axis title, in blue color
+plot.ts(res, axes=FALSE, ylab="", col="blue") 
+
+# add the right y-axis for residuals
+axis(side=4, at = pretty(range(res))) 
+
+# legend, debt and fit will be dashed
+legend("topleft", legend=c("Actual", "Fit", "Res"), lty=c(2,2,1), col=c("black", "red", "blue")) 
+
+acf(res)
+pacf(res)
+```
+
+**Comments**
++ Still difficult to judge just by the graph itself, so need to plot ACF and PACF
++ No spike in either ACF or PACF
+
+### Part 3 Dickey-Fuller Test
+
++ Conduct Dickey-Fuller Test
++ Forecast using TS with Random Walk and a root
+
+```{r}
+# P281
+library(readxl)
+
+data <- read_excel("../02_raw_data/Figure10_11_Hours_USA_Spain.xls")
+USA <-  ts(data$Hoursworked_USA, frequency = 1, start = 1970)
+SPAIN <-  ts(data$HoursWorked_SPAIN, frequency = 1, start = 1970)
+
+# plot the data
+plot(SPAIN)
+```
+
+**Comments**
++ Does not show deterministic trend
++ This means it may have a stochastic trend
++ Critical values are different with different null hypotheses
++ Is it a random walk with or without drift, is there a time trend?
+
+```{r}
+#P283
+#install.packages("urca") # Unit Root and Cointegration Tests for Time Series Data
+library(urca) #use urca package, allows choosing drift and/or trend for ADF test
+
+# augmented dickey-fuller test
+x <- ur.df(SPAIN, type = "drift", lags = 0)
+summary(x)
+
+ur.df(SPAIN, type = "drift", lags = 0) 
+ur.df(diff(SPAIN), type = "drift", lags = 0) 
+ur.df(diff(diff(SPAIN)), type = "drift", lags = 0) 
+```
+
+**Comments**
++ Conducted linear model
++ t value of 1st lag
++ can't trust the p-value because it's not a t-distribution. it's a dickey-fuller distribution!
++ t-statistic: 0.1408 
++ f-statistic: 0.2265 
++ we fail to reject the null
++ there is a unit root
+
+```{r}
+#install.packages("dynlm") #Dynamic Linear Modelling
+library(dynlm)  # use dynlm package
+
+dSPAIN <- diff(SPAIN)
+model <- dynlm(dSPAIN ~ lag(SPAIN, -1))  # regression corresponding to the above ADF test
+
+# estimation output
+summary(model) 
+AIC(model)
+## [1] 171.2994
+BIC(model)
+## [1] 175.6966
+
+# generate residuals
+res <- residuals(model) 
+acf(res)
+pacf(res)
+```
+
+**Comments**
++ Coefficients from dynamic model are same as Dickey Fuller test
++ Does not look like residuals are white noise because there are several spikes above the significance threshold
++ We need residuals to be white noise
+
+```{r}
+# P286
+ur.df(SPAIN, type = "drift", lags = 1) 
+
+# regression corresponding to the above ADF test
+model <- dynlm(dSPAIN ~ lag(SPAIN, -1) + lag(dSPAIN, -1))  
+summary(model)
+
+AIC(model)
+## [1] 134.9974
+BIC(model)
+## [1] 140.7334
+
+res <- residuals(model)
+acf(res)
+pacf(res)
+```
+
+**Comments**
++ We fail to reject the null
++ We prefer this model to the original because AIC and BIC numbers are smaller
++ PACF - no large spikes, so the residuals are white noise
++ Now we are prepared to make forecasts
+
+```{r}
+# P287 Prepare to forecast table 10.8 
+# AR(1) w/o constant for differenced series
+model <-dynlm(dSPAIN ~ lag(dSPAIN,-1)+0) 
+summary(model)
+
+AIC(model)
+## [1] 135.857
+BIC(model)
+## [1] 138.725
+```
+
+```{r}
+# make 4-step forecasts
+# fcast will include actual SPAIN and 4 forecasts for SPAIN
+fcast <- union(SPAIN, c(1, 2, 3, 4)) 
+
+# fcastd will include actual dSPAIN and 4 forecasts for dSPAIN
+fcastd <- union(dSPAIN, c(1, 2, 3, 4)) 
+
+for(i in 1:4){
+  fcastd[32 + i] = coef(model)[1] * fcastd[31 + i]  # manually retrieving forecasts from AR(1) model for dSPAIN
+  fcast[33 + i] = fcast[32 + i] + fcastd[32 + i]  # the forecast for fcast_t = fcast_t-1 +fcastd_t (note that fcastd is one period "behind", thats why the last term is fcastd[32+i], and not fcastd[33+i])
+}
+```
 
 
+```{r}
+# P288, fig 10.13
+fcast <-  ts(fcast, frequency = 1, start = 1970)
+ts.plot(fcast)  # plot of the forecast
+lines(SPAIN, col=6)  # simultaneous plotting of the actual (original) series in magenta color
+```
+
+**Comments**
++ Magenta is the original data
++ Black color is the point forecasts
+
+Do the same thing for the US TS
+
+```{r}
+# P289 do the same for the u.s.
+plot(USA)
+
+# ADF for USA with trend and constant
+x <- ur.df(USA, type="trend", lags=1)  
+summary(x)
+
+ur.df(USA, type="trend", lags=1)  # ADF for USA with trend and constant
+model <- dynlm(diff(USA) ~ lag(USA, -1) + diff(lag(USA, -1)) + trend(USA))  # corresponding regression
+summary(model)
+AIC(model)
+## [1] 104.6664
+BIC(model)
+## [1] 111.8363
+model <- dynlm(USA ~ lag(USA, -1) + lag(USA, -2) + trend(USA))  # AR(2) with trend and constant
+summary(model)
+AIC(model)
+## [1] 104.6664
+BIC(model)
+## [1] 111.8363
+```
+
+**Comments**
++ Plot is not deterministic
++ Could be stochastic with time trend
++ This indicates it's Case 3 in DF test
++ Conduct DF test and it's Augmented DF test with lag 1
++ Results tell us what we have run
++ Dynamic Linear Model allows us to use different functions
++ Model we use here is AR(2) model
 
