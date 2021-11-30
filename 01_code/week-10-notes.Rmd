@@ -1,0 +1,60 @@
+---
+title: "week_10_notes"
+author: "Andrew Nalundasan"
+date: "11/29/2021"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Overview video
+
++ Summary of the course
+
+    + Start with obtaining TS 
+        + TS must have a time trend (increasing, decreasing, cyclical/seasonal)
+        + usually divide into Deterministic vs. Stochastic trends
+    + Deterministic trends - need to remove the trend to get to stationarity to apply linear models
+    + Stochastic trends - remove trend by taking log difference
+        + Very good interpretation as it represents the growth rate
+        + Make certain process is stationary by applying Dickey-Fuller Test
+            + Apply ARMA or ARIMA model
+            + Plot ACF and PACF and analyze spikes to determine order
+    + In-Sample Evaluation
+        + Both will need to check unit root MA model and not necessarily invertible
+        + Check residuals
+    + T-test
+        + check coefs individually
+    + F-test
+        + check coefs jointly
+    + Check residuals to determine if white noise
+    + Stock price is not good for forecasting because data is usually white noise
+    + Auto sample evaluations
+        + Specific for forecasting
+        + Focus on forecasting error
+            + Split sample between estimation sample vs. prediction sample
+            + Calculate forecast error by analyzing prediction sample
+            + Different models will output different forecasts
+            + Combined forecast will give the best forecast
+
++ What's next?
+
+    + Continue independent learning with textbook
+    + Extract dependency from conditional mean
+        + Time dependency on conditional variance
+        + Assume conditional variance
+    + Expand from univariate to multi-variate TS
+    + Co-integration
+    
+
+
+
+
