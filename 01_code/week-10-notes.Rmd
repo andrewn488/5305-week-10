@@ -557,3 +557,53 @@ BIC(model)
 + Dynamic Linear Model allows us to use different functions
 + Model we use here is AR(2) model
 
+## Week 10 External Resources
+
+1. Random Walk not weakly dependent
+
++ All kinds of maths going on
++ Covariance and correlation calculations
++ For a process to be weakly dependend, the correlation must approach 0 as h approaches to infinity
++ Because correlation does not approach 0 fast enough
+
+2. Testing for non-stationarity Dickey-Fuller test for unit root
+
++ DF test starts off with AR process
++ All kinds of maths stuffs going on
++ Calculate an ordinary t-statistic and compare to t-distribution
+
+    + This will determine if we have a stationary or non-stationary TS
+
++ Compare t-statistic with values from D-F distribution
+
+    + if t-stat < D-F critical value: reject Ho.
+
+3. Augmented Dickey-Fuller Test
+
++ Test used to determine stationarity of a TS - more simple than AR(1) process
++ Ho: that we have a unit root
++ use a lagged delta term
+
+    + Ho: delta == 0
+    + HA: delta < 0
+
++ Include enough lags, but how many?
+
+    + These have t-distributions
+    + If using all of them, use F-test
+    + Until we have no serial correlation in our error term
+        + If so, we need to include more lags because dealing with a more complex series
+        
+4. Dickey-Fuller test - AR with Trend
+
++ All kinds of math stuffs going on. I'm super hungry. Going to eat Popeyes for dinner and I can't wait!
++ Don't need to worry about the gamma term
++ Calculate ordinary t-statistic based on delta_hat and compare with D-F distribution
+
+    + D-F distribution is different when including time trend compared to standard D-F test
+    + Increase chance of rejecting the null
+
+    
+
+
+
